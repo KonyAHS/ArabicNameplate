@@ -1,0 +1,76 @@
+"""Exercise workbench discovery and native FreeCAD edit mode in an offscreen GUI."""
+
+import os
+import sys
+import traceback
+import types
+
+import FreeCAD as App
+import FreeCADGui as Gui
+import Part
+from PySide6 import QtCore, QtWidgets
+
+
+RESULT_FILE = os.environ.get(
+    "ARABIC_NAMEPLATE_GUI_RESULT", "/tmp/arabic-nameplate-gui-result.txt"
+)
+
+
+def fake_build(params):
+    """Geometry is covered separately; keep this GUI lifecycle test bounded."""
+    shape = Part.makeBox(float(params["FontSize"]), 8.0, float(params["TextHeight"]))
+    return {"shape": shape, "warnings": [], "font_families": [params["FontFamily"]]}
+
+
+geometry = types.ModuleType("arabic_nameplate.geometry")
+geometry.build_nameplate = fake_build
+sys.modules["arabic_nameplate.geometry"] = geometry
+
+
+def finish(code, message):
+    print(message, flush=True)
+    with open(RESULT_FILE, "w", encoding="utf-8") as result:
+        result.write(str(code) + "\n" + message + "\n")
+    # FreeCAD 1.1.1's MeasureGui can dereference the torn-down main window if
+    # an active selection is cleared only later during offscreen shutdown.
+    Gui.Selection.clearSelection()
+    QtCore.QTimer.singleShot(0, lambda: QtWidgets.QApplication.instance().exit(code))
+
+
+def run():
+    try:
+        Gui.activateWorkbench("ArabicNameplateWorkbench")
+        commands = set(Gui.listCommands())
+        expected = {
+            "ArabicNameplate_Create",
+            "ArabicNameplate_Edit",
+            "ArabicNameplate_ExportSTL",
+            "ArabicNameplate_ExportSTEP",
+        }
+        assert expected <= commands, sorted(expected - commands)
+
+        Gui.runCommand("ArabicNameplate_Create")
+        from arabic_nameplate.commands import active_panel
+
+        obj = App.ActiveDocument.getObject("ArabicNameplate")
+        panel = active_panel(obj)
+        assert panel is not None
+        panel._set_widget_value("Text", "اختبار الواجهة")
+        panel._dirty = True
+        assert panel.update_model(), obj.LastError
+        assert panel.accept()
+
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(obj)
+        Gui.runCommand("ArabicNameplate_Edit")
+        panel = active_panel(obj)
+        assert panel is not None
+        assert Gui.ActiveDocument.getInEdit() is not None
+        panel.reject()
+        assert Gui.ActiveDocument.getInEdit() is None
+        finish(0, "Native FreeCAD GUI workbench smoke passed")
+    except Exception:
+        finish(1, traceback.format_exc())
+
+
+QtCore.QTimer.singleShot(0, run)

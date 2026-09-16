@@ -1,0 +1,78 @@
+"""Install this checkout into FreeCAD's per-user Mod directory."""
+
+import os
+import shutil
+import inspect
+
+import FreeCAD as App
+
+
+def notify(message, error=False):
+    stream = App.Console.PrintError if error else App.Console.PrintMessage
+    stream(message + "\n")
+    try:
+        from PySide6 import QtWidgets
+    except ImportError:
+        try:
+            from PySide2 import QtWidgets
+        except ImportError:
+            return
+    if error:
+        QtWidgets.QMessageBox.warning(None, "Arabic Nameplate installer", message)
+    else:
+        QtWidgets.QMessageBox.information(None, "Arabic Nameplate installer", message)
+
+
+def find_source_dir():
+    candidates = []
+    script_path = globals().get("__file__", "")
+    if script_path:
+        candidates.append(os.path.dirname(os.path.abspath(script_path)))
+    frame_path = inspect.currentframe().f_code.co_filename
+    if frame_path and not frame_path.startswith("<"):
+        candidates.append(os.path.dirname(os.path.abspath(frame_path)))
+    for candidate in candidates:
+        if os.path.isdir(os.path.join(candidate, "arabic_nameplate")):
+            return candidate
+    try:
+        from PySide6 import QtWidgets
+    except ImportError:
+        try:
+            from PySide2 import QtWidgets
+        except ImportError:
+            return ""
+    selected = QtWidgets.QFileDialog.getExistingDirectory(
+        None,
+        "Select the extracted ArabicNameplate folder",
+        os.path.expanduser("~"),
+    )
+    return str(selected) if selected else ""
+
+
+source_dir = find_source_dir()
+target_dir = os.path.join(App.getUserAppDataDir(), "Mod", "ArabicNameplate")
+
+if not os.path.isdir(os.path.join(source_dir, "arabic_nameplate")):
+    notify("Run this macro from the ArabicNameplate project directory; the arabic_nameplate package was not found.", True)
+elif os.path.exists(target_dir):
+    notify(
+        "ArabicNameplate is already installed at:\n{}\n\nRename or remove that folder, then run this macro again.".format(target_dir),
+        True,
+    )
+else:
+    os.makedirs(target_dir)
+    files = ("Init.py", "InitGui.py", "package.xml", "LICENSE", "README.md")
+    directories = ("arabic_nameplate", "resources", "examples")
+    for name in files:
+        source = os.path.join(source_dir, name)
+        if os.path.isfile(source):
+            shutil.copy2(source, os.path.join(target_dir, name))
+    for name in directories:
+        source = os.path.join(source_dir, name)
+        if os.path.isdir(source):
+            shutil.copytree(
+                source,
+                os.path.join(target_dir, name),
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+            )
+    notify("ArabicNameplate was installed at:\n{}\n\nRestart FreeCAD to load the workbench.".format(target_dir))

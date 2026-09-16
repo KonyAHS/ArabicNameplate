@@ -1,0 +1,42 @@
+"""Create an editable Arabic welcome sign in the active FreeCAD document."""
+
+import FreeCAD as App
+
+from arabic_nameplate import create_nameplate
+
+
+doc = App.ActiveDocument or App.newDocument("ArabicWelcome")
+plate = create_nameplate(doc)
+plate.Label = "أهلاً وسهلاً"
+plate.Text = "أهلاً وسهلاً"
+plate.FontSize = 24.0
+plate.Bold = True
+plate.Direction = "RTL"
+plate.Alignment = "Center"
+plate.TextHeight = 3.0
+plate.OutlineWidth = 1.2
+plate.OutlineHeight = 1.2
+plate.BaseStyle = "Rounded rectangle"
+plate.BaseMargin = 4.0
+plate.BaseHeight = 2.0
+plate.CornerRadius = 4.0
+plate.ConnectionMode = "Bridges"
+plate.ConnectionScope = "All"
+plate.BridgeWidth = 1.2
+plate.BridgeHeight = 1.2
+doc.recompute()
+
+if App.GuiUp:
+    import FreeCADGui as Gui
+    from arabic_nameplate.view_provider import ViewProviderArabicNameplate
+
+    if not getattr(plate.ViewObject, "Proxy", None):
+        ViewProviderArabicNameplate(plate.ViewObject)
+    Gui.activeDocument().activeView().viewAxonometric()
+    Gui.activeDocument().activeView().fitAll()
+
+print("Status:", plate.Status)
+if plate.LastError:
+    print("Error:", plate.LastError)
+for warning in plate.Warnings:
+    print("Warning:", warning)

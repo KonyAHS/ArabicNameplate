@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+  <name>Arabic Nameplate</name>
+  <description>Create fully parametric, 3D-printable Arabic and mixed-text nameplates.</description>
+  <version>0.1.0</version>
+  <date>2026-09-16</date>
+  <maintainer>ArabicNameplate contributors</maintainer>
+  <license file="LICENSE">MIT</license>
+  <icon>resources/icons/workbench.svg</icon>
+  <freecadmin>1.0.0</freecadmin>
+  <pythonmin>3.10</pythonmin>
+  <content>
+    <workbench>
+      <name>Arabic Nameplate</name>
+      <classname>ArabicNameplateWorkbench</classname>
+      <subdirectory>./</subdirectory>
+      <icon>resources/icons/workbench.svg</icon>
+      <tag>3D printing</tag>
+      <tag>Arabic</tag>
+      <tag>text</tag>
+      <tag>nameplate</tag>
+    </workbench>
+  </content>
+</package>
